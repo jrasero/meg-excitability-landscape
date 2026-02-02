@@ -1,8 +1,8 @@
-# Assessing the excitability landscape from electromagnetic brain signals
+#  Assessing whole-cortex excitability from electromagnetic brain signals
 
 Code, scripts and plots for manuscript:
 
-**Assessing the excitability landscape from electromagnetic brain signals**
+**Assessing whole-cortex excitability from electromagnetic brain signals**
 
 Giovanni Pellegrino*, Gian Marco Duma*, Anna-Lisa Schuler, Meaghan Daub, Daniele Marinazzo, Giorgio Arcara, Andrea Soddu, Javier Rasero
 
