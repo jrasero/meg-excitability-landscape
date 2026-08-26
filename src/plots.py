@@ -10,11 +10,11 @@ import matplotlib.pylab as plt
 
 def plot_parcellated_data(conn_dict, cbar=True, cmap='viridis', 
                           outline_dict = None, zero_transparent=True, 
-                          conn_overlay_dict = None, alpha=1, color_range=None):
+                          conn_overlay_dict = None, alpha=1, color_range=None, n_rois=100):
     from neuromaps.images import dlabel_to_gifti
     
     with open(
-            "/home/javi/Documentos/meg-excitability-clustering/data/Schaefer2018_100Parcels_17Networks_order_info.txt") as f:
+            f"/home/javi/Documentos/meg-excitability-landscape/data/Schaefer2018_{n_rois}Parcels_17Networks_order_info.txt") as f:
         lines = f.readlines()
            
     labels_schaefer = dict()
@@ -28,7 +28,7 @@ def plot_parcellated_data(conn_dict, cbar=True, cmap='viridis',
     p = Plot(lh, rh)
     # add schaefer parcellation (no color bar needed)
     lh_parc, rh_parc = dlabel_to_gifti(
-        "/home/javi/Documentos/meg-excitability-clustering/data/Schaefer2018_100Parcels_17Networks_order.dlabel.nii"
+        f"/home/javi/Documentos/meg-excitability-landscape/data/Schaefer2018_{n_rois}Parcels_17Networks_order.dlabel.nii"
         )
     lh_parc = lh_parc.agg_data()
     rh_parc = rh_parc.agg_data()
@@ -95,7 +95,7 @@ def plot_with_overlays(conn_dict,
     import numpy as np
     
     with open(
-            "/home/javi/Documentos/meg-excitability-clustering/data/Schaefer2018_100Parcels_17Networks_order_info.txt") as f:
+            "/home/javi/Documentos/meg-excitability-landscape/data/Schaefer2018_100Parcels_17Networks_order_info.txt") as f:
         lines = f.readlines()
            
     labels_schaefer = dict()
@@ -109,7 +109,7 @@ def plot_with_overlays(conn_dict,
     p = Plot(lh, rh)
     # add schaefer parcellation (no color bar needed)
     lh_parc, rh_parc = dlabel_to_gifti(
-        "/home/javi/Documentos/meg-excitability-clustering/data/Schaefer2018_100Parcels_17Networks_order.dlabel.nii"
+        "/home/javi/Documentos/meg-excitability-landscape/data/Schaefer2018_100Parcels_17Networks_order.dlabel.nii"
         )
     lh_parc = lh_parc.agg_data()
     rh_parc = rh_parc.agg_data()
