@@ -172,3 +172,62 @@ def plot_with_overlays(conn_dict,
 #    fig = p.build()
     return fig
 
+def circular_lollipop_filled(values_dict, title='',
+                              stick_color='k', dot_color='k', 
+                              fill_color='#A0A0A0', alpha=1, figsize=(10, 10)):
+    """
+    Circular lollipop plot with sticks, joined dots, and filled area under the curve.
+
+    Parameters:
+        labels (list of str): Categories.
+        values (list of float): Corresponding values.
+        title (str): Title of the plot.
+        stick_color (str): Color of the stick lines.
+        dot_color (str): Color of the dots.
+        fill_color (str): Color of the area fill under the curve.
+        alpha (float): Transparency of the fill.
+        figsize (tuple): Figure size.
+    """
+    
+    # Compute angles for each lollipop
+    labels = list(values_dict.keys())
+    values = list(values_dict.values())
+    
+    if len(labels) != len(values):
+        raise ValueError("Length of labels and values must match.")
+
+    # Setup
+    num_vars = len(labels)
+    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+    
+    # Repeat first value to close the circle for fill and line
+    angles += angles[:1]
+    values += values[:1]
+    labels += labels[:1]
+
+    # Plot
+    fig, ax = plt.subplots(figsize=figsize, subplot_kw=dict(polar=True))
+
+    # Draw lollipop sticks
+    for angle, value in zip(angles[:-1], values[:-1]):
+        ax.plot([angle, angle], [0, value], color=stick_color, linewidth=0.)
+
+    # Draw filled area under the curve
+    ax.fill(angles, values, color=fill_color, alpha=alpha)
+
+    # Connect the dots with lines
+    ax.plot(angles, values, color=dot_color, linewidth=2)
+
+    # Draw dots
+    ax.scatter(angles, values, color=dot_color, s=120, zorder=3)
+
+    # Formatting
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(labels[:-1], size=21)
+    ax.set_yticklabels([])
+    ax.set_ylim(0, max(values) * 1.1)
+    ax.spines['polar'].set_visible(False)
+    ax.grid(color='k', linestyle='dotted', linewidth=0.5)
+
+    plt.title(title, size=16)
+    return fig, ax

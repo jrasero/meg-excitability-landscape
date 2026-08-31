@@ -13,7 +13,7 @@ cluster
 import numpy as np
 from scipy.stats import rankdata
 import sys
-sys.path.append("/home/javi/Documentos/meg-excitability-clustering/src")
+sys.path.append("/home/javi/Documentos/meg-excitability-landscape/src")
 from input_data import load_data, get_region_labels
 from plots import plot_parcellated_data
 
@@ -30,19 +30,17 @@ from matplotlib.patches import Rectangle
 # 2. Load Data
 # ================================
 
-# ----- PSD data -----
-
 labels = get_region_labels()
-psd_mats, strategies = load_data()
+data_mats, measures, _ = load_data()
 
 # stack matrices
-X = np.array(list(psd_mats.values()))
+X = np.array(list(data_mats.values()))
 # Average over subjects
 X_group = X.mean(axis=0)
 
 # Load cluster IDs
 clus_id = np.load(
-    "/home/javi/Documentos/meg-excitability-clustering/data/clusters_new.npz")["clus_id"]
+    "/home/javi/Documentos/meg-excitability-landscape/data/clusters_new.npz")["clus_id"]
 
 # Take the ranks along each measure, and average over measures in the same cluster
 X_clus = np.array([rankdata(X_group, axis=1)[clus_id==label,:].mean(axis=0) \
@@ -60,10 +58,10 @@ assert n_clus == 6
 
 scale = 'scale100'
 receptor_data = np.genfromtxt(
-    '/home/javi/Documentos/meg-excitability-clustering/data/receptors/scale100/receptor_data_'+scale+'.csv', 
+    '/home/javi/Documentos/meg-excitability-landscape/data/receptors/scale100/receptor_data_'+scale+'.csv', 
     delimiter=',')
 receptor_names = np.load(
-    '/home/javi/Documentos/meg-excitability-clustering/data/receptors/scale100/receptor_names_pet.npy')
+    '/home/javi/Documentos/meg-excitability-landscape/data/receptors/scale100/receptor_names_pet.npy')
 
 # Take only those receptors related to E/I
 ei_receptors = ["A4B2", "M1", "VAChT", "NMDA", "mGluR5", "GABAa" ]
@@ -107,7 +105,7 @@ pheno_data = ei_data_ordered.copy()
 # ================================
 
 # Step 1: Load spins samples
-spins = np.load("/home/javi/Documentos/meg-excitability-clustering/data/spin_permutations.npy")
+spins = np.load("/home/javi/Documentos/meg-excitability-landscape/data/spin_permutations.npy")
 nspins = spins.shape[-1]
 
 

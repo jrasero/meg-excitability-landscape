@@ -121,22 +121,22 @@ def plot_edge_graph(weight_matrix,
 # 2. Load Data
 # ================================
 
-# ----- PSD data -----
+# ----- data -----
 
 labels = get_region_labels()
-psd_mats, strategies = load_data()
+data_mats, measures, _ = load_data()
 
-R_subjects = []
-for key,value in psd_mats.items():
+R_scans = []
+for key,value in data_mats.items():
     R = pd.DataFrame(value).T.corr("spearman").to_numpy()
-    R_subjects.append(R)
+    R_scans.append(R)
 
-R_subjects = np.array(R_subjects)
-R_avg = np.array(R_subjects).mean(0)
+R_scans = np.array(R_scans)
+R_avg = np.array(R_scans).mean(0)
 
 # Load clusters
 res_clus = np.load(
-    "/home/javi/Documentos/meg-excitability-clustering/data/clusters_new.npz")
+    "/home/javi/Documentos/meg-excitability-landscape/data/clusters_new.npz")
 
 R_avg_ordered = R_avg.copy()[np.argsort(res_clus["clus_id"]),:][:, np.argsort(res_clus["clus_id"])]
 measure_labels = res_clus["labels"][np.argsort(res_clus["clus_id"])]
@@ -156,7 +156,7 @@ cbar.set_label('Correlation strength', fontsize=25)
 cbar.ax.tick_params(labelsize=20)
 ax.margins(0.1)  
 
-fig.savefig("/home/javi/Documentos/meg-excitability-clustering/plots/correlation_measures_graph_v2.png", 
+fig.savefig("/home/javi/Documentos/meg-excitability-landscape/plots/correlation_measures_graph_v2.png", 
             dpi=300)
-fig.savefig("/home/javi/Documentos/meg-excitability-clustering/plots/correlation_measures_graph_v2.svg", 
+fig.savefig("/home/javi/Documentos/meg-excitability-landscape/plots/correlation_measures_graph_v2.svg", 
             dpi=300)

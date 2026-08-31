@@ -6,7 +6,7 @@ Script to generate the spin permutations to be later used
 import numpy as np
 import pandas as pd
 import sys
-sys.path.append("/home/javi/Documentos/meg-excitability-clustering/src")
+sys.path.append("/home/javi/Documentos/meg-excitability-landscape/src")
 from input_data import get_region_labels
 from nilearn.datasets import fetch_atlas_schaefer_2018
 from netneurotools import stats

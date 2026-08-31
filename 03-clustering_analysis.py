@@ -65,20 +65,20 @@ def mean_intercluster_distance(distance_matrix, labels, agg='mean'):
 # 2. Load Data
 # ================================
 
-# ----- PSD data -----
+# ----- data -----
 
 labels = get_region_labels()
-psd_mats, strategies = load_data()
+data_mats, measures, _ = load_data()
 
-R_subjects = []
-for key,value in psd_mats.items():
+R_scans = []
+for key,value in data_mats.items():
     R = pd.DataFrame(value).T.corr("spearman").to_numpy()
-    R_subjects.append(R)
+    R_scans.append(R)
 
-R_subjects = np.array(R_subjects)
-R_avg = np.array(R_subjects).mean(0)
+R_scans = np.array(R_scans)
+R_avg = np.array(R_scans).mean(0)
 
-D_subjects = 1 - R_subjects # Distance matrix by subject
+D_scans = 1 - R_scans # Distance matrix by subject
 D_avg = 1 - R_avg # Distance matrix for the group
 
 
@@ -99,12 +99,12 @@ link_cols = {10: 'C3',
              17: 'C0',
              18: 'C4'}
 
-outdir= "/home/javi/Documentos/meg-excitability-clustering/plots"
+outdir= "/home/javi/Documentos/meg-excitability-landscape/plots"
 fig, axs = plt.subplots(nrows=2, figsize=(10,10))
 
 # Plot dendogram
 dn = hierarchy.dendrogram(Z, 
-                          labels=sorted(strategies), 
+                          labels=measures, 
                           color_threshold =0.,
                           #link_color_func=lambda x: link_cols[x],
                           above_threshold_color="xkcd:dark grey",
@@ -177,114 +177,7 @@ s_vals = silhouette_samples(D_avg, cluster_labels, metric='precomputed')
 np.savez(
     "/home/javi/Documentos/meg-excitability-clustering/data/clusters_new.npz", 
           clus_id = hierarchy.cut_tree(Z, n_clusters).flatten(), 
-          labels = sorted(strategies))
+          labels = measures)
 
 
-
-
-
-
-# ================================
-# 4. Plot distance distributions
-# ================================
-
-# Construct data frame for violin plots
-dist_xy = dict()
-for ii, sx in enumerate(strategies):
-    for jj, sy in enumerate(strategies):
-        if ii<=jj:
-            continue
-        name = sx + "-" + sy
-        dist_xy[name] = D_subjects[:, ii, jj]
-
-dist_xy = pd.DataFrame(dist_xy)
-dist_xy = pd.melt(dist_xy.filter(regex="40Hz$"), 
-                  value_name="distance")
-dist_xy.variable = dist_xy.variable.apply(lambda x: str(x).replace("-40Hz", ""))
-
-# Calculate median for each category
-median_by_category = dist_xy.groupby('variable')['distance'].median()
-# Sort categories by median
-sorted_categories = median_by_category.sort_values().index
-dist_xy["variable"] = pd.Categorical(dist_xy["variable"], 
-                                     categories=sorted_categories, ordered=True)
-
-
-palette = sns.color_palette("Spectral", len(dist_xy["variable"].unique()))
-
-# Plot only distance measures to 40Hz
-fig, ax = plt.subplots(figsize=(15,10))
-sns.violinplot(dist_xy, x="variable", y="distance", inner="box",
-               palette="pastel",edgecolor="black", 
-               density_norm="area")
-sns.boxplot(dist_xy, x="variable", y="distance",
-            palette="pastel",width=0.5, linecolor='k', 
-            linewidth=2, fliersize=0)
-for color, collection, patch in zip(palette, ax.collections, ax.patches):
-    collection.set_facecolor(color)
-    patch.set_facecolor(color)
-    
-sns.stripplot(dist_xy, x="variable", y="distance",  
-              jitter=0.1, size=5, edgecolor="k", color="k")
-ax.tick_params(labelsize=20, rotation=45, axis="x")
-ax.tick_params(labelsize=20, axis="y")
-ax.set_xlabel("")
-ax.set_ylabel("Distance", size=25)
-sns.despine(trim=True)
-plt.tight_layout()
-plt.savefig("/home/javi/Documentos/meg-excitability-clustering/plots/AllExcitability_40Hz_distances.png", 
-            dpi=300)
-
-# Plot distance distributions between pairs of representative measures
-subset_strategies = ['Phase_Ex', 
-                     '40Hz',  
-                     'AlphaRelative',
-                     'Exponent',
-                     'SE']
-# Construct data frame for violin plots
-dist_sub_xy = dict()
-for ii, sx in enumerate(strategies):
-    for jj, sy in enumerate(strategies):
-        if sx not in subset_strategies:
-            continue
-        if sy not in subset_strategies:
-            continue
-        if ii<=jj:
-            continue
-        name = sx + "-" + sy
-        dist_sub_xy[name] = D_subjects[:, ii, jj]
-    
-dist_sub_xy = pd.DataFrame(dist_sub_xy)
-
-dist_sub_xy = pd.melt(dist_sub_xy, value_name="distance")
-
-# Calculate median for each category
-median_by_category = dist_sub_xy.groupby('variable')['distance'].median()
-# Sort categories by median
-sorted_categories = median_by_category.sort_values().index
-dist_sub_xy["variable"] = pd.Categorical(dist_sub_xy["variable"], 
-                                         categories=sorted_categories, ordered=True)
-
-palette = sns.color_palette("Spectral", 15)
-fig, ax = plt.subplots(figsize=(15,10))
-sns.violinplot(dist_sub_xy, x="variable", y="distance", inner="box",
-               palette=palette, edgecolor="black", 
-               density_norm="area")
-sns.boxplot(dist_sub_xy, x="variable", y="distance",
-            palette=palette,width=0.5, linecolor='k', 
-            linewidth=2, fliersize=0)
-
-for color, collection, patch in zip(palette, ax.collections, ax.patches):
-    collection.set_facecolor(color)
-    patch.set_facecolor(color)
-sns.stripplot(dist_sub_xy, x="variable", y="distance",  
-              jitter=0.1, size=5, edgecolor="k", color="k")
-ax.tick_params(labelsize=20, rotation=60, axis="x")
-ax.tick_params(labelsize=20, axis="y")
-ax.set_xlabel("")
-ax.set_ylabel("Distance", size=25)
-sns.despine(trim=True)
-plt.tight_layout()
-plt.savefig("/home/javi/Documentos/meg-excitability-clustering/plots/AllExcitability_centroid_distances.png", 
-            dpi=300)
 

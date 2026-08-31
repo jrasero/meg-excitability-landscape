@@ -6,8 +6,6 @@ from scipy.io import loadmat
 
 def get_region_labels(n_rois=100):
 
-    #scouts = loadmat("/home/javi/Documentos/meg-excitability-landscape/data/scout_Schaefer_100_17net_102.mat", 
-     #                struct_as_record=False,  squeeze_me=True)["Scouts"]
     labels = loadmat(
         "/home/javi/Documentos/meg-excitability-landscape/data/Schaefer_labels_17net.mat")[f"roi{n_rois}"][0]
     
@@ -24,54 +22,24 @@ def get_region_labels(n_rois=100):
 
 def load_data(ranked=False):
     import numpy as np
-    import os
-    from glob import glob
     from scipy.stats import rankdata
 
-
-    strategies = [os.path.basename(folder) for folder 
-                in glob("/home/javi/Documentos/meg-excitability-landscape/data/AllExcitability/*")]
+    data_all = np.load("/home/javi/Documentos/meg-excitability-landscape/data/data_main.npz")["data"]
+    measures = np.load("/home/javi/Documentos/meg-excitability-landscape/data/data_main.npz")["measures"]
+    subjects = np.load("/home/javi/Documentos/meg-excitability-landscape/data/data_main.npz")["subjects"]
     
-    check_strategy_equal = []
-    for strategy in strategies:
-        check_strategy_equal.append(len(glob(f"/home/javi/Documentos/meg-excitability-landscape/data/AllExcitability/{strategy}/*")))
     
-    assert np.all(np.array(check_strategy_equal)==72)
-    
-    subjects = [os.path.basename(file).split("_")[0] 
-                for file in sorted(glob("/home/javi/Documentos/meg-excitability-landscape/data/AllExcitability/AlphaRelative/*.mat"))]
-    
-    subjects[42:] = [name + "_REAL" if ii % 2 == 0 else name + "_SHAM" for ii, 
-                     name in enumerate(subjects[42:])]
-    
-    check_all = []
-    for subj in subjects:
-       check_all.append(
-           len(glob(f"/home/javi/Documentos/meg-excitability-landscape/data/AllExcitability/*/*{subj}*")))
-       
-    assert np.all(np.array(check_all)==10)
-    
-    psd_mats = dict()
-    for subj in subjects:
-        psd_profiles = []
-        for strategy in sorted(strategies):
-            mat_file = glob(
-                f"/home/javi/Documentos/meg-excitability-landscape/data/AllExcitability/{strategy}/*{subj}*")[0]
-            data = loadmat(mat_file, squeeze_me=True)["Output"]["AtlasData"].item()
-            if data.ndim==2:
-                data = data[:,0]
-                
-            data = data[2:] # Remove medial values
-            ## NEW to align what excitability means...
-            if strategy in ["FOOOF_Alpha", "AbsoluteAlpha", "AlphaRelative", 
-                            "SE", "Exponent", "Offset"]:
-                data = data.max() -  data + data.min()
-                
+    data_mats = dict()
+    for six, subj in enumerate(subjects):
+        data_profiles = []
+        for mix, meas in enumerate(measures):
+            
+            data = data_all[six, mix, :]
             if ranked:
                 data = rankdata(data)
                 
-            psd_profiles.append(data)
+            data_profiles.append(data)
             
-        psd_mats[subj] = np.row_stack(psd_profiles)
+        data_mats[f"scan{six}"] = np.row_stack(data_profiles)
         
-    return psd_mats, sorted(strategies)
+    return data_mats, measures, subjects

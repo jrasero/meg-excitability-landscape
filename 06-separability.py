@@ -12,7 +12,7 @@ import numpy as np
 from scipy.stats import rankdata
 from scipy.stats import f_oneway
 import sys
-sys.path.append("/home/javi/Documentos/meg-excitability-clustering/src")
+sys.path.append("/home/javi/Documentos/meg-excitability-landscape/src")
 from input_data import get_region_labels, load_data
 from plots import plot_parcellated_data, circular_lollipop_filled
 import seaborn as sns
@@ -23,19 +23,17 @@ import matplotlib.pylab as plt
 # 2. Load Data
 # ================================
 
-# ----- PSD data -----
-
 labels = get_region_labels()
-psd_mats, strategies = load_data()
+data, measures, _ = load_data()
 
 # stack matrices
-X = np.array(list(psd_mats.values()))
+X = np.array(list(data.values()))
 
 X_ranks = np.array([rankdata(X[ii,:,:], axis=1) for ii in range(X.shape[0])])
 
 # Now, compute centroids by averaging per cluster
 clus_id = np.load(
-    "/home/javi/Documentos/meg-excitability-clustering/data/clusters_new.npz")["clus_id"]
+    "/home/javi/Documentos/meg-excitability-landscape/data/clusters_new.npz")["clus_id"]
 
 X_avg_clus = np.array([X_ranks[:, clus_id==label,:].mean(axis=1) 
                        for label in np.unique(clus_id)])
@@ -62,15 +60,14 @@ for jj in range(n_regs):
 
 # Region importance
 fig = plot_parcellated_data(feature_importances, cbar=True, cmap="YlOrRd")
-#fig.axes[0].set_title(strategy, size=20)
 fig.axes[1].set_title("Importance", size=15)
 fig.axes[1].set_xticks([fig.axes[1].get_xticks()[0], 
                         fig.axes[1].get_xticks()[-1]])
 fig.axes[1].set_xticklabels(["Less", "More"])
 fig.axes[1].tick_params(labelsize=10)
 fig.axes[1].set_position([0.25, -1.8, 0.5, 2])
-fig.savefig("/home/javi/Documentos/meg-excitability-clustering/plots/region_importance.png", dpi=300)
-fig.savefig("/home/javi/Documentos/meg-excitability-clustering/plots/region_importance.svg", dpi=300)
+fig.savefig("/home/javi/Documentos/meg-excitability-landscape/plots/region_importance.png", dpi=300)
+fig.savefig("/home/javi/Documentos/meg-excitability-landscape/plots/region_importance.svg", dpi=300)
 
 
 # Region importance with 4 highlighted regions
@@ -83,9 +80,9 @@ for key in np.array(sorted(feature_importances, key=feature_importances.get,
 
 fig = plot_parcellated_data(feature_importances, cbar=False, cmap="YlOrRd", 
                             outline_dict=outline_dict)
-fig.savefig("/home/javi/Documentos/meg-excitability-clustering/plots/region_importance_highlight.png", 
+fig.savefig("/home/javi/Documentos/meg-excitability-landscape/plots/region_importance_highlight.png", 
             dpi=300)
-fig.savefig("/home/javi/Documentos/meg-excitability-clustering/plots/region_importance_highlight.svg", 
+fig.savefig("/home/javi/Documentos/meg-excitability-landscape/plots/region_importance_highlight.svg", 
             dpi=300)
 
 # Barplots for each of these highlighted regions
@@ -135,9 +132,9 @@ for key in outline_dict.keys():
     ax.tick_params(labelsize=10, size=0)
     ax.set_title("_".join(key.split("_")[1:]), size=28)
     
-    plt.savefig(f"/home/javi/Documentos/meg-excitability-clustering/plots/region_anova_{key}_v2.png", 
+    plt.savefig(f"/home/javi/Documentos/meg-excitability-landscape/plots/region_anova_{key}_v2.png", 
                 dpi=300)
-    plt.savefig(f"/home/javi/Documentos/meg-excitability-clustering/plots/region_anova_{key}_v2.svg", 
+    plt.savefig(f"/home/javi/Documentos/meg-excitability-landscape/plots/region_anova_{key}_v2.svg", 
                 dpi=300)
     
     
@@ -155,9 +152,9 @@ fig, ax = plt.subplots()
 ax.axis('off')
 ax.legend(handles=legend_elements, ncols= 3, 
           loc='center', frameon=False, fontsize=15)
-plt.savefig("/home/javi/Documentos/meg-excitability-clustering/plots/legend_clusters.png", 
+plt.savefig("/home/javi/Documentos/meg-excitability-landscape/plots/legend_clusters.png", 
             bbox_inches='tight', dpi=300)
-plt.savefig("/home/javi/Documentos/meg-excitability-clustering/plots/legend_clusters.svg", 
+plt.savefig("/home/javi/Documentos/meg-excitability-landscape/plots/legend_clusters.svg", 
             bbox_inches='tight', dpi=300)
 
 
@@ -176,8 +173,8 @@ for label in np.unique(labels_rsn):
 
 fig, ax = circular_lollipop_filled(feat_imp_rsn)
 fig.tight_layout()
-fig.savefig("/home/javi/Documentos/meg-excitability-clustering/plots/rsn_importance.png", dpi=300)
-fig.savefig("/home/javi/Documentos/meg-excitability-clustering/plots/rsn_importance.svg", dpi=300)
+fig.savefig("/home/javi/Documentos/meg-excitability-landscape/plots/rsn_importance.png", dpi=300)
+fig.savefig("/home/javi/Documentos/meg-excitability-landscape/plots/rsn_importance.svg", dpi=300)
 
 # Plot each region of the RSN network
 for rsn_label in np.unique(labels_rsn):
@@ -189,6 +186,6 @@ for rsn_label in np.unique(labels_rsn):
             roiplots_dict[label] = 0
     fig = plot_parcellated_data(roiplots_dict, cbar=False, cmap="binary", 
                                 conn_overlay_dict=roiplots_dict)
-    fig.savefig(f"/home/javi/Documentos/meg-excitability-clustering/plots/{rsn_label}.png", dpi=300)
-    fig.savefig(f"/home/javi/Documentos/meg-excitability-clustering/plots/{rsn_label}.svg", dpi=300)
+    fig.savefig(f"/home/javi/Documentos/meg-excitability-landscape/plots/{rsn_label}.png", dpi=300)
+    fig.savefig(f"/home/javi/Documentos/meg-excitability-landscape/plots/{rsn_label}.svg", dpi=300)
     

@@ -1,76 +1,24 @@
-from glob import glob
 import seaborn as sns
-from os.path import join as opj
-from scipy.io import loadmat
 import numpy as np
 from scipy.stats import spearmanr
-from tqdm import tqdm
-import mat73
 import pandas as pd
 from matplotlib import pyplot as plt
 from pathlib import Path
 import sys
 sys.path.append("/home/javi/Documentos/meg-excitability-landscape/src")
-from input_data import get_region_labels, load_data
+from input_data import get_region_labels
 from plots import plot_parcellated_data
 
 
-def reverse_vals(d):
-    # Make sure I am reversing the right axis when using with the time windows
-    if len(d) != 100:
-        raise ValueError
-    return d.max() -  d + d.min()
-    
+data_mats = np.load("/home/javi/Documentos/meg-excitability-landscape/data/data_timewindows.npz")["data"]
+measures = np.load("/home/javi/Documentos/meg-excitability-landscape/data/data_timewindows.npz")["measures"]
 
-data_folder = "/home/javi/Documentos/meg-excitability-landscape/supp/Excitability_TimeResolved"
-measures = [ meas.split("/")[-1] for meas in glob(opj(data_folder, "*"))]
-
-# Only clusters
-measures  = ['Phase_Ex','DFA_EI', 'AbsoluteAlpha', 'Exponent', 'SE']
-
-data_dict = dict()
-for measure in tqdm(measures):
-
-    data_files = glob(opj(data_folder, measure,"**", "*.mat"), recursive=True)
-    
-    # Discard "NP819", as it is incmplete
-    data_files = [filename for filename in data_files if "NP819" not in filename]
-    print(len(data_files))
-    try:
-        loadmat(data_files[0])
-        load_data = loadmat
-    except NotImplementedError:
-        load_data = mat73.loadmat
-
-    if measure == "FOOOF_Alpha":
-        data = [load_data(d)["fooof_alpha_power_data"][2:,:] for d in data_files]
-    elif measure == "AlphaRelative":
-        data = [load_data(d)["rel_alpha_power_data"][2:,:] for d in data_files]
-    else:
-        data = [load_data(d)["data"][2:,:] for d in data_files]
-    
-    if measure in ["FOOOF_Alpha", "AbsoluteAlpha", "AlphaRelative", 
-                   "SE", "Exponent", "Offset"]:
-        
-        data = [np.apply_along_axis(reverse_vals, axis=0, arr=d) for d in data]
-        #data = [d.max() -  d + d.min() for d in data]
-        
-    #data = [rankdata(d) for d in data]
-        
-    if measure == "Phase_Ex":
-        measure="EI"
-    elif measure == "DFA_EI":
-        measure = "DFA"
-    elif measure == "AbsoluteAlpha":
-        measure = "Alpha"
-    data_dict[measure] = np.array(data)
-    #data_dict[measure] = data
-        
-
-n_windows = 7
+n_windows = data_mats.shape[-1]
+n_scans = data_mats.shape[0]
 labels = get_region_labels()
+
 Path("/home/javi/Documentos/meg-excitability-landscape/supp/plots_clusters").mkdir(parents=True, exist_ok=True)
-for ii, measure in enumerate(measures):
+for mix, measure in enumerate(measures):
     
     if measure == "Phase_Ex":
         measure="EI"
@@ -79,14 +27,14 @@ for ii, measure in enumerate(measures):
     elif measure == "AbsoluteAlpha":
         measure = "Alpha"
     
-    psd_avg_data = data_dict[measure].copy().mean(axis=0)
+    avg_data = data_mats[:,mix, :, :].copy().mean(axis=0) #data_dict[measure].copy().mean(axis=0)
     
     for w_id in range(n_windows):
         Path(f"/home/javi/Documentos/meg-excitability-landscape/supp/plots_clusters/window_{w_id+1}").mkdir(parents=True, exist_ok=True)
 
-        psd_profiles_dict = {}
-        for key, value in zip(labels, psd_avg_data[:, w_id]):
-            psd_profiles_dict[key] = value
+        data_profiles_dict = {}
+        for key, value in zip(labels, avg_data[:, w_id]):
+            data_profiles_dict[key] = value
         
         title=measure
         # This is just to change the title for the names of these two 
@@ -97,38 +45,30 @@ for ii, measure in enumerate(measures):
             title = "DFA"
         elif measure == "AbsoluteAlpha":
             title = "Alpha"
-        fig = plot_parcellated_data(psd_profiles_dict)
+        fig = plot_parcellated_data(data_profiles_dict)
         
-        #if w_id == 0:
-        #   fig.axes[0].set_title(title, size=20)
-        #fig.axes[1].tick_params(labelsize=12)
-        #fig.axes[1].set_position([0.25, -1.8, 0.5, 2])
-        #ticks = fig.axes[1].get_xticks()
-        #fig.axes[1].set_xticks([ticks[0], ticks[-1]])
-        #fig.axes[1].set_xticklabels(["min", "max"])
         fig.axes[1].remove()
         fig.savefig(
             f"/home/javi/Documentos/meg-excitability-landscape/supp/plots_clusters/window_{w_id+1}/brainplot_{measure}.png",
                     dpi=300, bbox_inches="tight")
 
-n_windows = 7
-n_subjects = 71
+
 between_measures_corrs = []
 for w_id in range(n_windows): 
-    for ii, mx in enumerate(list(data_dict.keys())):
-        for jj, my in enumerate(list(data_dict.keys())):
+    for ii, mx in enumerate(measures):
+        for jj, my in enumerate(measures):
             if mx == my:
                 continue
             if ii>jj:
                 continue
-            for sid in range(n_subjects):
+            for sid in range(n_scans):
     
                 between_measures_corrs.append(
                     [w_id, 
                      f"{mx}-{my}", 
                      sid, 
-                     spearmanr(data_dict[mx][sid,:, w_id], 
-                               data_dict[my][sid,:, w_id])[0]
+                     spearmanr(data_mats[sid, ii, :, w_id], 
+                               data_mats[sid, jj, :, w_id])[0]
                      ])
         
     

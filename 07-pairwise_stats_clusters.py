@@ -11,7 +11,7 @@ from scipy.spatial.distance import squareform
 import pandas as pd
 
 import sys
-sys.path.append("/home/javi/Documentos/meg-excitability-clustering/src")
+sys.path.append("/home/javi/Documentos/meg-excitability-landscape/src")
 from input_data import load_data, get_region_labels
 from plots import plot_with_overlays
 
@@ -132,32 +132,19 @@ def plot_edge_graph(weight_matrix,
 # 2. Load Data
 # ================================
 
-# ----- PSD data -----
-
 labels = get_region_labels()
-psd_mats, strategies = load_data()
+data, measures, subjects = load_data()
 
-X = np.array([mat for mat in psd_mats.values()])
-subjects = list(psd_mats.keys())
+X = np.array([mat for mat in data.values()])
 
-subjects_df = pd.DataFrame({"Subject":[subject.split("_")[0] for subject in subjects]})
-# BUT!
-# ASP1S001 and NP806 and Subject06 are the same subject with same MRI
-idxs = subjects_df[(subjects_df.Subject == "ASP1S001") |  (subjects_df.Subject == "NP806")].index 
-subjects_df.loc[idxs, "Subject"] = "Subject06"
-# NO802 same subject as Subject01 with same MRI
-idxs = subjects_df[(subjects_df.Subject == "NP802")].index 
-subjects_df.loc[idxs, "Subject"] = "Subject01"
-# NP808 and Subject09 are the same with same MRI
-idxs = subjects_df[(subjects_df.Subject == "NP808")].index 
-subjects_df.loc[idxs, "Subject"] = "Subject09"
+subjects_df = pd.DataFrame({"Subject":subjects})
 
 # Load clusters
-clus_id = np.load("/home/javi/Documentos/meg-excitability-clustering/data/clusters_new.npz")["clus_id"]
-strategies_clus = np.load("/home/javi/Documentos/meg-excitability-clustering/data/clusters_new.npz")["labels"]
+clus_id = np.load("/home/javi/Documentos/meg-excitability-landscape/data/clusters_new.npz")["clus_id"]
+measures_clus = np.load("/home/javi/Documentos/meg-excitability-landscape/data/clusters_new.npz")["labels"]
 
 # Make sure label order is the same as in the input data (should be)
-assert np.alltrue([a==b for a,b in zip(strategies, strategies_clus)])
+assert np.alltrue([a==b for a,b in zip(measures, measures_clus)])
 
 # Convert data into ranks for each subject
 X_clus = rankdata(X, axis=2)
@@ -167,10 +154,10 @@ X_clus = np.array([np.mean(X_clus[:, clus_id==ii, :], axis=1) for ii in range(ma
 X_clus = np.swapaxes(X_clus, 0, 1) # follow the same order as original: subject x measure x region
 
 # Plot distance distributions between pairs of representative measures
-subset_strategies = [strategies_clus[clus_id==ii][0] for ii in range(max(clus_id)+1)]
+subset_measures = [measures_clus[clus_id==ii][0] for ii in range(max(clus_id)+1)]
 
-subset_strategies = ["Alpha" if  "Alpha"  in x else x for x in subset_strategies]
-subset_strategies = ["FortyHz" if  "40Hz"  in x else x for x in subset_strategies]
+subset_measures = ["Alpha" if  "Alpha"  in x else x for x in subset_measures]
+subset_measures = ["FortyHz" if  "40Hz"  in x else x for x in subset_measures]
 
 
 # ================================
@@ -181,14 +168,14 @@ subset_strategies = ["FortyHz" if  "40Hz"  in x else x for x in subset_strategie
 # Run region-wise linear mixed models per pairs of clusters
 n_regs = 100
 
-zstats, pvals = np.empty((n_regs, len(subset_strategies), len(subset_strategies))),  \
-    np.empty((n_regs, len(subset_strategies), len(subset_strategies)))
+zstats, pvals = np.empty((n_regs, len(subset_measures), len(subset_measures))),  \
+    np.empty((n_regs, len(subset_measures), len(subset_measures)))
 zstats[:] = 0
 pvals[:] = 1
 for ireg in tqdm(range(n_regs)):
-    X_reg = pd.DataFrame(X_clus[:,:,ireg], columns = subset_strategies)
-    for xx, col_x in enumerate(subset_strategies):
-        for yy, col_y in enumerate(subset_strategies):
+    X_reg = pd.DataFrame(X_clus[:,:,ireg], columns = subset_measures)
+    for xx, col_x in enumerate(subset_measures):
+        for yy, col_y in enumerate(subset_measures):
             if col_x == col_y:
                 continue
             if xx > yy:
@@ -220,7 +207,7 @@ for ireg in tqdm(range(n_regs)):
             pvals[ireg, yy, xx] = pvals[ireg, xx, yy]
         
 
-zstats = np.nan_to_num(pvals, nan=0)
+zstats = np.nan_to_num(zstats, nan=0)
 pvals = np.nan_to_num(pvals, nan=1)
 
 pvals_2d = np.row_stack([squareform(pv, checks=False) for pv in pvals])
@@ -241,7 +228,7 @@ pvals_corrected  = np.array([squareform(pvals_2d_corrected[ii,:])
 # 4. plots
 # ================================
 
-out_dir = "/home/javi/Documentos/meg-excitability-clustering/plots/across_pairs"
+out_dir = "/home/javi/Documentos/meg-excitability-landscape/plots/across_pairs"
 Path(out_dir).mkdir(exist_ok=True, parents=True)
 
 colors = plt.cm.coolwarm(np.linspace(0, 1, 256))
@@ -306,25 +293,25 @@ for ii in range(6):
             
             
             # Add title:                
-            label_x = subset_strategies[ii]
-            label_y = subset_strategies[jj]
+            label_x = subset_measures[ii]
+            label_y = subset_measures[jj]
             
-            if label_x == subset_strategies[0]:
+            if label_x == subset_measures[0]:
                 label_x = "40Hz"
-            if label_y == subset_strategies[0]:
+            if label_y == subset_measures[0]:
                 label_x = "40Hz"
             fig.axes[0].set_title(f"{label_x} vs {label_y}", pad=-3, size=25)
             
             fig.tight_layout()
             
             Path(out_dir + "/" +  
-                 f"{subset_strategies[ii]}_{subset_strategies[jj]}").mkdir(exist_ok=True, parents=True)
+                 f"{subset_measures[ii]}_{subset_measures[jj]}").mkdir(exist_ok=True, parents=True)
             
-            fig.savefig(opj(out_dir, f"{subset_strategies[ii]}_{subset_strategies[jj]}",
-                            f"{subset_strategies[ii]}_{subset_strategies[jj]}_{sign}_highlighted.png"), 
+            fig.savefig(opj(out_dir, f"{subset_measures[ii]}_{subset_measures[jj]}",
+                            f"{subset_measures[ii]}_{subset_measures[jj]}_{sign}_highlighted.png"), 
                         dpi=300)
-            fig.savefig(opj(out_dir, f"{subset_strategies[ii]}_{subset_strategies[jj]}",
-                            f"{subset_strategies[ii]}_{subset_strategies[jj]}_{sign}_highlighted.svg"), 
+            fig.savefig(opj(out_dir, f"{subset_measures[ii]}_{subset_measures[jj]}",
+                            f"{subset_measures[ii]}_{subset_measures[jj]}_{sign}_highlighted.svg"), 
                         dpi=300)
             plt.close(fig)
             
